@@ -4,23 +4,40 @@ import jakarta.xml.bind.annotation.XmlElement;
 import jakarta.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
 
-
+/**
+ * Modèle représentant un étudiant (entité principale de l'application).
+ * 
+ * Implémente Serializable pour pouvoir être utilisé dans des transferts
+ * réseau, persisté en fichier, ou sérialisé/désérialisé facilement.
+ */
 @XmlRootElement(name = "Student")
 public class Student implements Serializable {
 
+    // Identifiant unique auto-généré (base de données)
     private int id;
-    private int reg_num; // registration number (matriculation)
+
+    // Numéro de matricule (unique pour chaque étudiant)
+    private int reg_num;
+
+    // Informations personnelles
     private String first_name;
     private String last_name;
     private String email;
     private String address;
-    private String scholarship; // bourse
-    private String id_card; // carte d'identité
-    private String level;
 
-    public Student() {}
+    // Informations académiques et administratives
+    private String scholarship; // Bourse
+    private String id_card;     // Carte d'identité
+    private String level;       // Niveau d'étude
 
-    public Student(int reg_num, String fname, String lname, String email, String address, String level, String id_card ,String scholarship) {
+    // --- Constructeurs ---
+    public Student() {
+        // Constructeur vide requis par JAXB et frameworks
+    }
+
+    // Constructeur sans ID (utilisé avant insertion DB)
+    public Student(int reg_num, String fname, String lname, String email,
+                   String address, String level, String id_card, String scholarship) {
         this.reg_num = reg_num;
         this.first_name = fname;
         this.last_name = lname;
@@ -31,7 +48,9 @@ public class Student implements Serializable {
         this.scholarship = scholarship;
     }
 
-    public Student(int id, int reg_num, String fname, String lname, String email, String address, String level, String id_card ,String scholarship) {
+    // Constructeur complet (inclut l'ID depuis la DB)
+    public Student(int id, int reg_num, String fname, String lname, String email,
+                   String address, String level, String id_card, String scholarship) {
         this.id = id;
         this.reg_num = reg_num;
         this.first_name = fname;
@@ -43,15 +62,16 @@ public class Student implements Serializable {
         this.scholarship = scholarship;
     }
 
+    // --- Getters / Setters ---
     @XmlElement
     public int getID() {
         return id;
     }
-    
 
     @XmlElement
-    public int get_regNum() { return reg_num;}
-
+    public int get_regNum() { 
+        return reg_num;
+    }
     public void set_regNum(int reg_num) {
         this.reg_num = reg_num;
     }
@@ -60,7 +80,6 @@ public class Student implements Serializable {
     public String get_idCard () {
         return id_card;
     }
-
     public void set_IdCard(String id_card) {
         this.id_card = id_card;
     }
@@ -109,16 +128,19 @@ public class Student implements Serializable {
     public String get_scholarship() {
         return scholarship;
     }
-
     public void set_scholarship(String scholarship) {
         this.scholarship = scholarship;
     }
 
+    // --- Affichage debug ---
     @Override
     public String toString() {
-        return "ID : " + id + '\\' + "numéro: " + reg_num + '\\' + " prénom: " + last_name + '\\' + " email: " + email + '\\' + " level: " + level + '\\' + " address:" + address + '\\' + " bourse: " + scholarship;
+        return "ID : " + id + '\\' +
+               " numéro: " + reg_num + '\\' +
+               " prénom: " + first_name + " " + last_name + '\\' +
+               " email: " + email + '\\' +
+               " level: " + level + '\\' +
+               " address: " + address + '\\' +
+               " bourse: " + scholarship;
     }
-
-
 }
-

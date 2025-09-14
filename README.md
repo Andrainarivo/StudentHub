@@ -19,9 +19,9 @@ Les objectifs principaux sont :
   - **Confidentialité** des échanges (mTLS)  
   - **Authenticité** des entités (client ↔ serveur)  
   - **Intégrité** des données transmises  
-- Implémenter un **protocole applicatif personnalisé** au-dessus des sockets TLS.  
+- Implémenter un **protocole applicatif personnalisé** au-dessus des sockets TLS (XML).  
 - Gérer la **persistance des données** via une base MySQL côté serveur.  
-- Offrir une **interface riche (Swing)** côté client, avec une architecture MVC claire.  
+- Offrir une **interface utilisateur (Swing)** côté client, avec une architecture MVC.  
 
 ---
 
@@ -48,18 +48,21 @@ Les objectifs principaux sont :
 ---
 
 ## 📂 Structure du projet  
-
+```
 studenthub_client
 ├── certs → certificats et clés TLS du client
 ├── logs → journaux côté client
 ├── requests → requêtes en attente (XML)
 ├── responses → réponses sauvegardées (XML)
 └── src/main/java/mg/eni/studenthub
-├── client → GUI Swing (MVC), client TLS, retrythread
+├── auth → authentification (credentials fourni par l'admin du BD)
+├── client → client TLS (studentClient), retrythread
 ├── config → chargement du fichier de configuration (config.properties) et configuration logs
-├── model → entité (Student)
+├── controller → logique CRUD
+├── model → entités
 ├── shared → classes communes client/serveur
-└── utils → utilitaires (DB, Sérialisation/desérialisation XML)
+└── utils → utilitaires (DB, Sérialisation/desérialisation XML, TLS)
+├── view → Vue Swing
 
 studenthub_server
 ├── certs → certificats et clés TLS du serveur
@@ -71,7 +74,7 @@ studenthub_server
 ├── server → serveur TLS
 ├── shared → classes communes client/serveur
 └── utils → utilitaire (DB)
-
+```
 
 ---
 
@@ -85,33 +88,32 @@ studenthub_server
 - **Couche Réseau :**
   - Utilisation de **sockets sécurisés (SSLServerSocket / SSLSocket)**.  
   - Authentification mutuelle : le client et le serveur échangent leurs certificats.  
-  - Communication chiffrée bout en bout (chiffrement robuste avec RSA 2048).  
+  - Communication chiffrée avec RSA 2048.  
 
 - **Couche Applicative :**
   - Protocole maison basé sur des **requetes XML** échangés entre client et serveur.  
-  - Chaque requête contient un **code d’opération** (ADD, GET, UPDATE, DELETE) et une **payload XML**.  
+  - Chaque requête contient un **code d’opération** (ADD, GET, UPDATE, DELETE) et une **payload XML** (la requete lui meme).  
   - Le serveur interprète la requête, interagit avec la base, puis renvoie une réponse XML.  
 
 - **Couche Persistance :**
-  - Base MySQL avec table `students`.  
+  - Base MySQL `students & users`.  
   - Pattern DAO pour l’accès aux données.  
 
-- **Couche Présentation (Client Swing) :**
-  - Architecture **MVC** claire (séparation GUI / logique / modèle).  
-  - Interface utilisateur moderne via **FlatLaf**.  
+- **Couche Présentation (Swing) :**
+  - Architecture **MVC**.  
+  - Interface utilisateur modernisé à l'aide **FlatLaf**.  
 
 ---
 
 ## ⚙️ Technologies utilisées  
 
 - **Java 21**  
-- **Swing (FlatLaf)**  
-- **Sockets TLS (mTLS)** pour la sécurisation des communications client/serveur 
-- **MySQL** pour la persistance des données
-- **Maven** pour la gestion du cycle de vie 
-- **JAXB** pour la sérialisation/desérialisation XML des requêtes/réponses
-- **keytool** pour la génération des certificats
-
+- **Swing (+FlatLaf)**  
+- **Sockets TLS (mTLS)**
+- **MySQL** 
+- **Maven**
+- **JAXB**
+- **keytool**
 ---
 
 ## 🚀 Lancer l'application  
@@ -124,18 +126,20 @@ chmod 764 generate_mtls_certs.sh
 bash generate_mtls_certs.sh
 ```
 ### 2. Lancer le serveur
-
+```bash
 cd studenthub_server
 mvn clean install
 mvn exec:java -Dexec.mainClass="mg.eni.studenthub.server.StudentServer"
+```
 
 ### 3. Lancer le client
-
+```bash
 cd studenthub_client
 mvn clean install
 mvn exec:java
+```
 
-🛠️ Améliorations futures
+## 🛠️ Améliorations futures
 
     Ajout de la gestion des utilisateurs & rôles
 
@@ -150,11 +154,11 @@ mvn exec:java
 Le script generate_certs.sh :
 
   - Génère une clé RSA 2048 bits pour le CA, serveur, client.
-  - Crée des keystore PKCS12 pour serveur et client.
-  - Exporte les certificats publics (.pem) pour inspection ou distribution.
+  - Crée des keystore PKCS12 pour le serveur et le client.
+  - Exporte les certificats publics (.crt) pour inspection ou distribution.
   - Crée des truststores contenant seulement le certificat du CA (chaîne de confiance).
 
-**NB** : C’est ce truststore qui permet au serveur de faire confiance au client (et inversement).
+**imp** : C’est ce truststore qui permet au serveur de faire confiance au client (et inversement).
 
 ### 🔒 RSA et mTLS
 
@@ -167,8 +171,8 @@ Le script generate_certs.sh :
   - Le serveur prouve son identité au client (via son certificat signé par la CA).
   - Le client prouve aussi son identité au serveur (certificat signé par la même CA).
   - Java (JSSE) → utilise SSLContext initialisé avec :
-  - Keystore → pour sa clé privée et son certificat.
-  - Truststore → pour la liste des CA de confiance (ici notre CA interne).
+    - Keystore → pour sa clé privée et son certificat.
+    - Truststore → pour la liste des CA de confiance (CA).
 
 ### 🧪 Tester les certificats
 

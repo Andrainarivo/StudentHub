@@ -16,18 +16,16 @@ public class LoggerConfig {
             SimpleFormatter simpleFormatter = new SimpleFormatter();
 
             fileHandler.setFormatter(simpleFormatter);
-            fileHandler.setLevel(Level.ALL);
+            fileHandler.setLevel(Level.SEVERE);
 
-            rootLogger.setLevel(Level.ALL);
+            rootLogger.setLevel(Level.SEVERE);
             rootLogger.addHandler(fileHandler);
 
             for (Handler handler: rootLogger.getHandlers()) {
                 if (handler instanceof ConsoleHandler) {
-                    handler.setLevel(Level.SEVERE);
+                    handler.setLevel(Level.ALL);
                 }
             }
-
-
         } catch (IOException e) {
             e.printStackTrace();
         }

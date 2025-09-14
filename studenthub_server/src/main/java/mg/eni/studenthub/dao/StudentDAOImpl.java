@@ -46,15 +46,13 @@ public class StudentDAOImpl implements StudentDAO {
                 return createStudentFromResultSet(rs);
             }
         } catch (SQLException e) {
-            LOGGER.warning(e.getMessage());
-            //LOGGER.log(Level.WARNING, e.getMessage());
+            LOGGER.log(Level.WARNING, e.getMessage());
         }
         return null;
     }
     
     @Override
     public Student findByRegNum(int reg_num) {
-        //LoggerConfig.setup();
         String sql = "SELECT * FROM students WHERE regnum = ?";
 
         try(Connection conn = DB_Connection.getConnection();
@@ -67,8 +65,7 @@ public class StudentDAOImpl implements StudentDAO {
                 return createStudentFromResultSet(rs);
             }
         } catch (SQLException e) {
-            LOGGER.warning(e.getMessage());
-            //LOGGER.log(Level.WARNING, e.getMessage());
+            LOGGER.log(Level.WARNING, e.getMessage());
         }
         return null;
     }
@@ -87,7 +84,6 @@ public class StudentDAOImpl implements StudentDAO {
                 return createStudentFromResultSet(rs);
             }
         } catch (SQLException e) {
-            //LOGGER.warning(e.getMessage());
             LOGGER.log(Level.WARNING, e.getMessage());
         }
         return null;
@@ -112,18 +108,34 @@ public class StudentDAOImpl implements StudentDAO {
             return ps.executeUpdate() > 0;
 
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            LOGGER.log(Level.WARNING, e.getMessage());
         }
+        return false;
     }
 
     @Override
-    public boolean delete(int reg_num) {
+    public boolean deleteByRegNum(int reg_num) {
         String sql = "DELETE FROM students WHERE regnum = ?";
 
         try(Connection conn = DB_Connection.getConnection();
             PreparedStatement ps = conn.prepareStatement(sql)) {
             
             ps.setInt(1, reg_num);
+            return ps.executeUpdate() > 0 ;
+            
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean deleteById(int id) {
+        String sql = "DELETE FROM students WHERE id = ?";
+
+        try(Connection conn = DB_Connection.getConnection();
+            PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setInt(1, id);
             return ps.executeUpdate() > 0 ;
             
         } catch (SQLException e) {
@@ -150,7 +162,7 @@ public class StudentDAOImpl implements StudentDAO {
             return ps.executeUpdate() > 0;
             
          } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, e.getMessage());
+            LOGGER.log(Level.WARNING, e.getMessage());
             return false;
          }
     }
@@ -174,7 +186,7 @@ public class StudentDAOImpl implements StudentDAO {
             return ps.executeUpdate() > 0;
             
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, e.getMessage());
+            LOGGER.log(Level.WARNING, e.getMessage());
             return false;
         }
     }
@@ -207,14 +219,14 @@ public class StudentDAOImpl implements StudentDAO {
             LOGGER.log(Level.INFO, "Batch executed successfully. Inserted {0} records.", results.length);;
            
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error executing batch", e);
+            LOGGER.log(Level.WARNING, "Error executing batch", e);
             try (Connection connection = DB_Connection.getConnection()) {
                 if (connection != null) {
                     connection.rollback();
                     LOGGER.log(Level.INFO, "Transaction rolled back successfully.");
                 }
             } catch (SQLException ex) {
-                LOGGER.log(Level.SEVERE, "Error rolling back transaction", ex);
+                LOGGER.log(Level.WARNING, "Error rolling back transaction", ex);
             }
         }
         

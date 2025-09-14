@@ -1,4 +1,4 @@
-package mg.eni.studenthub.client;
+package mg.eni.studenthub.utils;
 
 import javax.swing.*;
 

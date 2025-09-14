@@ -25,6 +25,7 @@ import mg.eni.studenthub.shared.StudentResponse;
 import mg.eni.studenthub.shared.StudentRequest.Action;
 import mg.eni.studenthub.utils.DB_Connection;
 import mg.eni.studenthub.utils.XmlUtil;
+import mg.eni.studenthub.utils.TLSUtil;
 
 public class RetryThread extends Thread {
     
@@ -43,149 +44,95 @@ public class RetryThread extends Thread {
             try {
                 File[] files = new File(REQ_FOLDER).listFiles((dir, name) -> name.endsWith(".xml"));
 
-                // 🔍 1. S'il n'y a aucun fichier en attente, inutile de contacter le serveur
+                // 1. Aucun fichier en attente
                 if (files == null || files.length == 0) {
-                    LOGGER.fine("😴 Aucun fichier XML en attente.");
+                    //LOGGER.fine("No pending XML request files.");
                     Thread.sleep(CHECK_INTERVAL_MS);
                     continue;
                 }
 
-                // 🔐 2. S'il y a des fichiers, on vérifie la disponibilité du serveur
-                if (files.length > 0 && StudentClient.isServerAvailable() && DB_Connection.isDbAvailable()) {
-                    LOGGER.info("🔄 Connexion TLS détectée. Traitement des fichiers XML en attente...");
+                // 2. Vérif serveur & DB
+                if (StudentClient.isServerAvailable() && DB_Connection.isDbAvailable()) {
+                    //LOGGER.info("TLS connection available. Processing pending XML requests...");
 
                     for (File file : files) {
                         StudentRequest request = XmlUtil.loadRequestFromXml(file.getAbsolutePath());
-                        Action action = request.getAction();
+                        if (request == null) {
+                            LOGGER.warning("Invalid XML request file: " + file.getName());
+                            continue;
+                        }
 
                         StudentResponse response = sendRequestToServer(request);
 
-                        if (response.isSuccess()) {
-                            LOGGER.info("✅ Requête " + file.getName() + " traitée avec succès.");
-                            file.delete();
+                        if (response != null && response.isSuccess()) {
+                            LOGGER.info("Request " + file.getName() + " processed successfully.");
+                            if (!file.delete()) {
+                                LOGGER.warning("Failed to delete processed request file: " + file.getName());
+                            }
                         } else {
-                            LOGGER.warning("❌ Échec d’envoi pour : " + file.getName());
+                            LOGGER.warning("Failed to process request: " + file.getName());
                         }
 
-                        // sauvegarder la réponse en XML si c'est un READ ou READ_ALL
-                        switch (action) {
-                            case READ_ALL:
-                                String filename = RES_FOLDER + "/response_READ_ALL_" + System.currentTimeMillis() + ".xml";
-
-                                try {
-                                    Files.createDirectories(Paths.get(RES_FOLDER));
-                                    XmlUtil.saveStudentResponseToXml(response, filename);
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
-                                break;
-                                
-                            case READ_BY_IDCARD:
-                                String filename2 = RES_FOLDER + "/response_IDCard_" + request.get_idCard() + ".xml";
-
-                                try {
-                                    Files.createDirectories(Paths.get(RES_FOLDER));
-                                    XmlUtil.saveStudentResponseToXml(response, filename2);
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
-                                break;
-
-                            case READ_BY_REGNUM:
-                                String filename3 = RES_FOLDER + "/response_RegNum_" + request.getNumber() + ".xml";
-
-                                try {
-                                    Files.createDirectories(Paths.get(RES_FOLDER));
-                                    XmlUtil.saveStudentResponseToXml(response, filename3);
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
-                                break;
-
-                            case READ_BY_ID:
-                                String filename4 = RES_FOLDER + "/response_ID_" + request.getNumber() + ".xml";
-
-                                try {
-                                    Files.createDirectories(Paths.get(RES_FOLDER));
-                                    XmlUtil.saveStudentResponseToXml(response, filename4);
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
-                                break;
-                        
-                            default:
-                                break;
+                        // Save response if it's a READ action
+                        switch (request.getAction()) {
+                            case READ_ALL -> saveResponse(response, RES_FOLDER + "/response_READ_ALL_" + System.currentTimeMillis() + ".xml");
+                            case READ_BY_IDCARD -> saveResponse(response, RES_FOLDER + "/response_IDCard_" + request.get_idCard() + ".xml");
+                            case READ_BY_REGNUM -> saveResponse(response, RES_FOLDER + "/response_RegNum_" + request.getNumber() + ".xml");
+                            case READ_BY_ID -> saveResponse(response, RES_FOLDER + "/response_ID_" + request.getNumber() + ".xml");
+                            default -> { /* no XML response to save */ }
                         }
                     }
 
                 } else {
-                    LOGGER.warning("🚫 Serveur TLS indisponible. Nouvelle tentative dans 5 secondes...");
+                    LOGGER.warning("TLS server unavailable. Retrying in 5 seconds...");
                 }
 
                 Thread.sleep(CHECK_INTERVAL_MS);
+
             } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, "⛔ Erreur dans RetryThread : " + e.getMessage(), e);
+                LOGGER.log(Level.SEVERE, "Unexpected error in RetryThread: " + e.getMessage(), e);
             }
         }
     }
 
+    // Factorisation de la sauvegarde réponse
+    private void saveResponse(StudentResponse response, String filePath) {
+        try {
+            Files.createDirectories(Paths.get(RES_FOLDER));
+            XmlUtil.saveStudentResponseToXml(response, filePath);
+            LOGGER.info("Response saved to: " + filePath);
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "Failed to save response to XML: " + filePath, e);
+        }
+    }
 
+    // Sécurisation du send
     private StudentResponse sendRequestToServer(StudentRequest request) {
-    try {
-        // 🔐 Lecture des paramètres TLS mTLS
-        String keystorePath = ConfigLoader.get("client_keystore.path");
-        String keystorePassword = ConfigLoader.get("client_keystore.password");
-        String truststorePath = ConfigLoader.get("client_truststore.path");
-        String truststorePassword = ConfigLoader.get("client_truststore.password");
+        try {
+            // TLS handshake setup (keystore/truststore) ...
+            SSLContext sslContext = TLSUtil.createSSLContext();
+            SSLSocketFactory factory = sslContext.getSocketFactory();
 
-        // 1. Charger le truststore (confiance en le serveur)
-        KeyStore trustStore = KeyStore.getInstance("JKS");
-        try (FileInputStream trustFis = new FileInputStream(truststorePath)) {
-            trustStore.load(trustFis, truststorePassword.toCharArray());
-        }
+            try (SSLSocket sslSocket = (SSLSocket) factory.createSocket(SERVER_HOST, SERVER_PORT);
+                ObjectOutputStream out = new ObjectOutputStream(sslSocket.getOutputStream());
+                ObjectInputStream in = new ObjectInputStream(sslSocket.getInputStream())) {
 
-        // 2. Charger le keystore (certificat du client)
-        KeyStore keyStore = KeyStore.getInstance("JKS");
-        try (FileInputStream keyFis = new FileInputStream(keystorePath)) {
-            keyStore.load(keyFis, keystorePassword.toCharArray());
-        }
+                out.writeObject(request);
+                out.flush();
 
-        // 3. Init du TrustManager
-        TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-        tmf.init(trustStore);
-
-        // 4. Init du KeyManager
-        KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        kmf.init(keyStore, keystorePassword.toCharArray());
-
-        // 5. Création du contexte SSL mutualisé
-        SSLContext sslContext = SSLContext.getInstance("TLS");
-        sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
-
-        SSLSocketFactory factory = sslContext.getSocketFactory();
-
-        // 6. Communication TLS
-        try (SSLSocket sslSocket = (SSLSocket) factory.createSocket(SERVER_HOST, SERVER_PORT);
-             ObjectOutputStream out = new ObjectOutputStream(sslSocket.getOutputStream());
-             ObjectInputStream in = new ObjectInputStream(sslSocket.getInputStream())) {
-
-            out.writeObject(request);
-            out.flush();
-
-            Object response = in.readObject();
-            if (response instanceof StudentResponse studentResponse) {
-                studentResponse.setSuccess(true);
-                return studentResponse;
-            } else {
-                LOGGER.warning("⚠️ Réponse inattendue (type inconnu) lors du retry.");
+                Object response = in.readObject();
+                if (response instanceof StudentResponse studentResponse) {
+                    return studentResponse;
+                } else {
+                    LOGGER.warning("Unexpected response type received during retry.");
+                    return new StudentResponse(false, "Unexpected response type");
+                }
             }
-        }
 
-    } catch (Exception e) {
-        LOGGER.warning("❌ Envoi échoué (RetryThread) : " + e.getClass().getSimpleName() + " - " + e.getMessage());
-        //return false;
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "RetryThread send failed: " + e.getMessage(), e);
+            return new StudentResponse(false, "Retry failed: " + e.getMessage());
+        }
     }
-    return null;
-}
 
 }

@@ -1,10 +1,8 @@
 package mg.eni.studenthub.utils;
 
 import java.sql.*;
-//import java.util.logging.Logger;
 
 public class DatabaseSetup {
-    //private static final Logger LOGGER = Logger.getLogger(DatabaseSetup.class.getName());
 
     public static void initializeDatabase() {
         if (DB_Connection.isDbAvailable()) {
@@ -36,8 +34,29 @@ public class DatabaseSetup {
         }
     }
 
+    public static void initTableUsers() {
+        if (DB_Connection.isDbAvailable()) {
+            try(Connection conn = DB_Connection.getConnection();
+                Statement stmt = conn.createStatement()) {
+
+                String createTableUser = "CREATE TABLE IF NOT EXISTS users ("
+                        + "id  INT AUTO_INCREMENT PRIMARY KEY, "
+                        + "username VARCHAR(50) NOT NULL UNIQUE, "
+                        + "password_hash VARCHAR(255) NOT NULL)";
+                stmt.executeUpdate(createTableUser);
+                
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            
+        } else {
+            return;
+        }
+    }
+
     public static void main(String[] args) {
         initializeDatabase();
+        initTableUsers();
     }
     
 

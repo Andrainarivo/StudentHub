@@ -11,7 +11,8 @@ public interface StudentDAO {
     boolean insertStudent(Student student);
     boolean updateStudentById(int id, Student student);
     boolean updateStudentByRegNum(int reg_num, Student student);
-    boolean delete(int reg_num);
+    boolean deleteById(int id);
+    boolean deleteByRegNum(int reg_num);
     void batchInsertStudents(List<Student> students);
     List<Student> getAllStudents();
 

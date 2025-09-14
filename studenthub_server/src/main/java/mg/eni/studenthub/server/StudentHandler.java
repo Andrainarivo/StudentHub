@@ -44,7 +44,7 @@ public class StudentHandler implements Runnable {
             
         } catch (Exception e) {
             System.out.println(e.getMessage());
-        } finally {
+        }finally {
             try {
                 sslSocket.close();
             } catch (IOException e) {
@@ -103,9 +103,13 @@ public class StudentHandler implements Runnable {
                 boolean up = dao.updateStudentByRegNum(request.getNumber(), request.getStudent());
                 return new StudentResponse(up, up ? "✅ Mise à jour de l'étudiant avec le matricule : " + request.getNumber() + "  réussie" : "❌ Mise à jour échouée");
 
-            case DELETE:
-                boolean deleted = dao.delete(request.getNumber());
+            case DELETE_BY_REGNUM:
+                boolean deleted = dao.deleteByRegNum(request.getNumber());
                 return new StudentResponse(deleted, deleted ? "✅ Étudiant (matricule : "+request.getNumber()+") supprimé" : "❌ Suppression échouée");
+
+            case DELETE_BY_ID:
+                boolean deleted_ = dao.deleteById(request.getNumber());
+                return new StudentResponse(deleted_, deleted_ ? "✅ Étudiant (identifiant : "+request.getNumber()+") supprimé" : "❌ Suppression échouée");
         
             default:
                 return new StudentResponse(false, "❌ Action inconnue");

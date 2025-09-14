@@ -104,7 +104,7 @@ keytool -gencert \
   -validity 3650 \
   -rfc
 
-# Import du certificat CA dans keystore serveur
+# Import du certificat CA dans le keystore du serveur
 keytool -importcert -noprompt \
   -alias "$CA_ALIAS" \
   -file "$CA_DIR/ca-cert.crt" \

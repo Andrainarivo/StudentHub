@@ -45,6 +45,12 @@
         <artifactId>exec-maven-plugin</artifactId>
         <version>3.5.0</version>
     </dependency>
+        <!-- https://mvnrepository.com/artifact/at.favre.lib/bcrypt -->
+    <dependency>
+        <groupId>at.favre.lib</groupId>
+        <artifactId>bcrypt</artifactId>
+        <version>0.10.2</version>
+    </dependency>
   </dependencies>
 
   <build>
@@ -96,6 +102,16 @@
           <artifactId>maven-project-info-reports-plugin</artifactId>
           <version>3.0.0</version>
         </plugin>
+
+        <!-- Plugin pour lancer directement la classe main avec "mvn exec:java" 
+        <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <version>3.5.0</version>
+            <configuration>
+                <mainClass>mg.eni.studenthub.Server.StudentServer</mainClass>
+            </configuration>
+        </plugin> -->
       </plugins>
     </pluginManagement>
   </build>

@@ -16,7 +16,7 @@ public class StudentRequest implements Serializable {
 
     // type d'action d'un request
     public enum Action {
-        CREATE, READ_BY_ID, READ_BY_REGNUM, READ_BY_IDCARD, READ_ALL, UPDATE_BY_ID, UPDATE_BY_REGNUM, DELETE
+        CREATE, READ_BY_ID, READ_BY_REGNUM, READ_BY_IDCARD, READ_ALL, UPDATE_BY_ID, UPDATE_BY_REGNUM, DELETE_BY_REGNUM, DELETE_BY_ID
     }
 
     @XmlElement

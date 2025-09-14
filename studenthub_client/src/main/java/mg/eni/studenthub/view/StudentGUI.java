@@ -1,6 +1,7 @@
-package mg.eni.studenthub.client;
+package mg.eni.studenthub.view;
 
 import mg.eni.studenthub.model.Student;
+import mg.eni.studenthub.model.StudentTableModel;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -9,12 +10,22 @@ import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 
+/**
+ * Interface graphique principale pour la gestion des étudiants.
+ * Contient :
+ *  - un panneau de recherche,
+ *  - un formulaire de saisie,
+ *  - une table pour lister les étudiants,
+ *  - une zone de logs.
+ */
 public class StudentGUI extends JFrame {
-    // Top-level components
+    // Zone de log
     private final JTextArea logArea = new JTextArea(6, 100);
+
+    // Champ de recherche
     private final JTextField searchField = new JTextField(24);
 
-    // Form fields
+    // Champs du formulaire
     private final JTextField idField = new JTextField(6);
     private final JTextField regNumField = new JTextField(10);
     private final JTextField fnameField = new JTextField(12);
@@ -25,22 +36,20 @@ public class StudentGUI extends JFrame {
     private final JTextField idCardField = new JTextField(14);
     private final JTextField amountField = new JTextField(10);
 
-    // Table
+    // Table + tri
     private final JTable table;
-    //private final StudentTableModel tableModel;
     private final TableRowSorter<StudentTableModel> sorter;
 
-    // Buttons (exposed for controller wiring)
-    public final JButton createBtn = new JButton("Créer");
-    public final JButton readByRegBtn = new JButton("Lire par RegNum");
-    public final JButton readAllBtn = new JButton("Tout lire");
-    public final JButton updateByIdBtn = new JButton("Mettre à jour (ID)");
-    public final JButton deleteByIdBtn = new JButton("Supprimer (ID)");
-    public final JButton clearFormBtn = new JButton("Vider formulaire");
+    // Boutons accessibles au contrôleur
+    public final JButton createBtn = new JButton("➕ Add Student");
+    public final JButton readByRegBtn = new JButton("🔎 Read by ID / RegNum / IDCard");
+    public final JButton readAllBtn = new JButton("📋 Read All");
+    public final JButton updateByIdBtn = new JButton("✏️ Update by ID / RegNum");
+    public final JButton deleteByIdBtn = new JButton("🗑️ Delete by ID / RegNum");
+    public final JButton clearFormBtn = new JButton("🧹 Clear Form");
 
     public StudentGUI(StudentTableModel model) {
         super("🎓 Student Management");
-        //this.tableModel = model;
         this.table = new JTable(model);
         this.sorter = new TableRowSorter<>(model);
         table.setRowSorter(sorter);
@@ -57,12 +66,13 @@ public class StudentGUI extends JFrame {
         installShortcuts();
     }
 
+    // --- Panneau supérieur : recherche + actions rapides ---
     private JComponent buildTopBar() {
         JPanel panel = new JPanel(new BorderLayout(8, 8));
 
-        // Search
+        // Zone de recherche
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        searchPanel.add(new JLabel("🔎 Recherche:"));
+        searchPanel.add(new JLabel("🔎 Search:"));
         searchField.getDocument().addDocumentListener(new DocumentListener() {
             public void insertUpdate(DocumentEvent e) { filter(); }
             public void removeUpdate(DocumentEvent e) { filter(); }
@@ -70,7 +80,7 @@ public class StudentGUI extends JFrame {
         });
         searchPanel.add(searchField);
 
-        // Actions
+        // Bouton Read All
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         actions.add(readAllBtn);
 
@@ -79,14 +89,16 @@ public class StudentGUI extends JFrame {
         return panel;
     }
 
+    // --- Centre : formulaire + table ---
     private JComponent buildCenterSplit() {
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        split.setResizeWeight(0.35); // left panel size
+        split.setResizeWeight(0.35);
         split.setLeftComponent(buildFormPanel());
         split.setRightComponent(buildTablePanel());
         return split;
     }
 
+    // --- Formulaire d'édition ---
     private JComponent buildFormPanel() {
         JPanel form = new JPanel(new GridBagLayout());
         GridBagConstraints c = new GridBagConstraints();
@@ -96,7 +108,7 @@ public class StudentGUI extends JFrame {
 
         int y = 0;
         addFieldRow(form, c, y++, "ID:", idField);
-        addFieldRow(form, c, y++, "RegNum:", regNumField);
+        addFieldRow(form, c, y++, "Registration Number:", regNumField);
         addFieldRow(form, c, y++, "First Name:", fnameField);
         addFieldRow(form, c, y++, "Last Name:", lnameField);
         addFieldRow(form, c, y++, "Email:", emailField);
@@ -105,6 +117,7 @@ public class StudentGUI extends JFrame {
         addFieldRow(form, c, y++, "ID Card:", idCardField);
         addFieldRow(form, c, y++, "Scholarship Amount:", amountField);
 
+        // Boutons actions
         JPanel btns = new JPanel(new GridLayout(0, 1, 6, 6));
         btns.add(createBtn);
         btns.add(readByRegBtn);
@@ -114,6 +127,7 @@ public class StudentGUI extends JFrame {
 
         c.gridx = 0; c.gridy = y; c.gridwidth = 2; c.weighty = 1; c.fill = GridBagConstraints.BOTH;
         form.add(btns, c);
+
         return new JScrollPane(form);
     }
 
@@ -124,6 +138,7 @@ public class StudentGUI extends JFrame {
         panel.add(field, c);
     }
 
+    // --- Table ---
     private JComponent buildTablePanel() {
         table.setFillsViewportHeight(true);
         table.setAutoCreateRowSorter(true);
@@ -131,11 +146,13 @@ public class StudentGUI extends JFrame {
         return new JScrollPane(table);
     }
 
+    // --- Zone de log ---
     private JComponent buildLogPanel() {
         logArea.setEditable(false);
         return new JScrollPane(logArea);
     }
 
+    // --- Raccourcis clavier ---
     private void installShortcuts() {
         JRootPane root = getRootPane();
         // Refresh list Ctrl+R
@@ -152,6 +169,7 @@ public class StudentGUI extends JFrame {
                 JComponent.WHEN_IN_FOCUSED_WINDOW);
     }
 
+    // --- Filtrage en temps réel ---
     private void filter() {
         String text = searchField.getText().trim();
         if (text.isEmpty()) {
@@ -161,25 +179,30 @@ public class StudentGUI extends JFrame {
         }
     }
 
-    // ===== Helpers visible par le contrôleur =====
+    // ===== Méthodes accessibles au contrôleur =====
+
+    /**
+     * Construit un objet Student depuis le formulaire.
+     * Affiche une erreur si les champs sont invalides.
+     */
     public Student buildStudentFromFormOrShowError() {
         try {
             if (isBlank(regNumField) || isBlank(fnameField) || isBlank(lnameField) ||
                 isBlank(emailField) || isBlank(addressField) || isBlank(levelField) ||
                 isBlank(idCardField) || isBlank(amountField)) {
-                JOptionPane.showMessageDialog(this, "❗ Tous les champs doivent être remplis.", "Champs manquants", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, "⚠️ All fields must be filled.", "Missing Fields", JOptionPane.WARNING_MESSAGE);
                 return null;
             }
             if (!emailField.getText().matches("^.+@.+\\..+$")) {
-                JOptionPane.showMessageDialog(this, "✉️ Email invalide.", "Erreur de format", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "✉️ Invalid email format.", "Format Error", JOptionPane.ERROR_MESSAGE);
                 return null;
             }
             if (!idCardField.getText().matches("\\d{12}")) {
-                JOptionPane.showMessageDialog(this, "🆔 ID Card doit contenir exactement 12 chiffres.", "Erreur de format", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "🆔 ID Card must contain exactly 12 digits.", "Format Error", JOptionPane.ERROR_MESSAGE);
                 return null;
             }
             return new Student(
-                    parseIntOrThrow(regNumField.getText(), "Le numéro d'enregistrement doit être un entier."),
+                    parseIntOrThrow(regNumField.getText(), "Registration Number must be an integer."),
                     fnameField.getText(),
                     lnameField.getText(),
                     emailField.getText(),
@@ -189,39 +212,38 @@ public class StudentGUI extends JFrame {
                     amountField.getText()
             );
         } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this, "🔢 " + ex.getMessage(), "Erreur de format", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "🔢 " + ex.getMessage(), "Format Error", JOptionPane.ERROR_MESSAGE);
             return null;
         }
     }
 
-    public Integer getIdFieldOrWarn() {
+    public Integer getIdField() {
         String t = idField.getText().trim();
-        if (t.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "L'ID est requis pour cette action.", "Champ requis", JOptionPane.WARNING_MESSAGE);
-            return null;
-        }
+        if (t.isEmpty()) return null;
         try { return Integer.parseInt(t); }
-        catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this, "L'ID doit être un entier.", "Erreur de format", JOptionPane.ERROR_MESSAGE);
-            return null;
-        }
+        catch (NumberFormatException ex) { return null; }
     }
 
-    public Integer getRegNumFieldOrWarn() {
+    public Integer getRegNumField() {
         String t = regNumField.getText().trim();
-        if (t.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "RegNum est requis.", "Champ requis", JOptionPane.WARNING_MESSAGE);
-            return null;
-        }
+        if (t.isEmpty()) return null;
         try { return Integer.parseInt(t); }
-        catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this, "RegNum doit être un entier.", "Erreur de format", JOptionPane.ERROR_MESSAGE);
-            return null;
-        }
+        catch (NumberFormatException ex) { return null; }
     }
 
-    private boolean isBlank(JTextField f) { return f.getText() == null || f.getText().isBlank(); }
-    private int parseIntOrThrow(String s, String message) { try { return Integer.parseInt(s.trim()); } catch (NumberFormatException e) { throw new NumberFormatException(message); } }
+    public String getIdCardField() {
+        String t = idCardField.getText().trim();
+        return t.isEmpty() ? null : t;
+    }
+
+    private boolean isBlank(JTextField f) {
+        return f.getText() == null || f.getText().isBlank();
+    }
+
+    private int parseIntOrThrow(String s, String message) {
+        try { return Integer.parseInt(s.trim()); }
+        catch (NumberFormatException e) { throw new NumberFormatException(message); }
+    }
 
     public void clearForm() {
         idField.setText("");
@@ -235,6 +257,9 @@ public class StudentGUI extends JFrame {
         amountField.setText("");
     }
 
+    /**
+     * Ajoute un message dans la zone de log.
+     */
     public void log(String message) {
         if (message == null || message.isBlank()) return;
         logArea.append(message + "\n");

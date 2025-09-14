@@ -6,3 +6,6 @@ requests/
 responses/
 ca/
 objective.txt
+*.log
+*.bak
+AuthTest.java
