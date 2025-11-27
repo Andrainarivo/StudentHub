@@ -187,4 +187,3 @@ openssl verify -CAfile ca/ca-cert.crt studenthub_client/certs/client-cert.crt
 ```
 
 📌 Auteur : Andrainarivo / ENI
-📅 Version actuelle : 1.0

@@ -9,3 +9,4 @@ objective.txt
 *.log
 *.bak
 AuthTest.java
+test/
